@@ -1,6 +1,6 @@
 import React, {Component} from 'react';
 import PropTypes from 'prop-types';
-import {StyleSheet, requireNativeComponent, NativeModules, View, ViewPropTypes, Image, Platform, findNodeHandle} from 'react-native';
+import {StyleSheet, requireNativeComponent, NativeModules, View, ViewPropTypes, Image, Platform, findNodeHandle, UIManager} from 'react-native';
 import resolveAssetSource from 'react-native/Libraries/Image/resolveAssetSource';
 import TextTrackType from './TextTrackType';
 import FilterType from './FilterType';
@@ -260,13 +260,13 @@ export default class Video extends Component {
     const RCTVideoInstance = this.getViewManagerConfig('RCTVideo');
 
     if (resizeMode === VideoResizeMode.stretch) {
-      nativeResizeMode = RCTVideoInstance.Constants.ScaleToFill;
+      nativeResizeMode = UIManager.getViewManagerConfig('TRTVideo').Constants.ScaleToFill;
     } else if (resizeMode === VideoResizeMode.contain) {
-      nativeResizeMode = RCTVideoInstance.Constants.ScaleAspectFit;
+      nativeResizeMode = UIManager.getViewManagerConfig('RCTVideo').Constants.ScaleAspectFit;
     } else if (resizeMode === VideoResizeMode.cover) {
-      nativeResizeMode = RCTVideoInstance.Constants.ScaleAspectFill;
+      nativeResizeMode = UIManager.getViewManagerConfig('RCTVideo').Constants.ScaleAspectFill;
     } else {
-      nativeResizeMode = RCTVideoInstance.Constants.ScaleNone;
+      nativeResizeMode = UIManager.getViewManagerConfig('RCTVideo').Constants.ScaleNone;
     }
 
     const nativeProps = Object.assign({}, this.props);

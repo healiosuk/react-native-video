@@ -84,6 +84,7 @@ static int const RCTVideoUnset = -1;
   NSString *_filterName;
   BOOL _filterEnabled;
   UIViewController * _presentingViewController;
+  BOOL _isInFullScreen;
 #if __has_include(<react-native-video/RCTVideoCache.h>)
   RCTVideoCache * _videoCache;
 #endif
@@ -746,12 +747,15 @@ static int const RCTVideoUnset = -1;
         if (!CGRectEqualToRect(oldRect, newRect)) {
           if (CGRectEqualToRect(newRect, [UIScreen mainScreen].bounds)) {
             NSLog(@"in fullscreen");
-
+            _isInFullScreen = YES;
             [self.reactViewController.view setFrame:[UIScreen mainScreen].bounds];
             [self.reactViewController.view setNeedsLayout];
-          } else NSLog(@"not fullscreen");
-        }
+          } else {
+              NSLog(@"not fullscreen");
+              _isInFullScreen = NO;
+          }
 
+        }
         return;
       }
   }
@@ -1327,12 +1331,16 @@ static int const RCTVideoUnset = -1;
 }
 
 - (void)setFullscreen:(BOOL) fullscreen {
-  if( fullscreen && !_fullscreenPlayerPresented && _player )
+  if( fullscreen && !_fullscreenPlayerPresented && _player && !_isInFullScreen )
   {
     // Ensure player view controller is not null
     if( !_playerViewController )
     {
       [self usePlayerViewController];
+    }
+    if (_controls) {
+      [_playerViewController.view removeFromSuperview];
+      [_playerViewController removeFromParentViewController];
     }
     // Set presentation style to fullscreen
     [_playerViewController setModalPresentationStyle:UIModalPresentationFullScreen];
@@ -1354,10 +1362,11 @@ static int const RCTVideoUnset = -1;
       if(self.onVideoFullscreenPlayerWillPresent) {
         self.onVideoFullscreenPlayerWillPresent(@{@"target": self.reactTag});
       }
-      [viewController presentViewController:_playerViewController animated:true completion:^{
+      [viewController presentViewController:_playerViewController animated:false completion:^{
         _playerViewController.showsPlaybackControls = YES;
         _fullscreenPlayerPresented = fullscreen;
         _playerViewController.autorotate = _fullscreenAutorotate;
+        [UIViewController attemptRotationToDeviceOrientation];
         if(self.onVideoFullscreenPlayerDidPresent) {
           self.onVideoFullscreenPlayerDidPresent(@{@"target": self.reactTag});
         }
@@ -1367,7 +1376,14 @@ static int const RCTVideoUnset = -1;
   else if ( !fullscreen && _fullscreenPlayerPresented )
   {
     [self videoPlayerViewControllerWillDismiss:_playerViewController];
-    [_presentingViewController dismissViewControllerAnimated:true completion:^{
+    [_presentingViewController dismissViewControllerAnimated:false completion:^{
+      [self videoPlayerViewControllerDidDismiss:_playerViewController];
+    }];
+  }
+  else if ( !fullscreen && _isInFullScreen)
+  {
+    [self videoPlayerViewControllerWillDismiss:_playerViewController];
+    [_playerViewController.parentViewController dismissViewControllerAnimated:false completion:^{
       [self videoPlayerViewControllerDidDismiss:_playerViewController];
     }];
   }
@@ -1497,7 +1513,13 @@ static int const RCTVideoUnset = -1;
   {
     _fullscreenPlayerPresented = false;
     _presentingViewController = nil;
-    _playerViewController = nil;
+    if (_controls) {
+      UIViewController *viewController = [self reactViewController];
+      [viewController addChildViewController:_playerViewController];
+      [self addSubview:_playerViewController.view];
+    } else {
+      _playerViewController = nil;
+    }
     [self applyModifiers];
     if(self.onVideoFullscreenPlayerDidDismiss) {
       self.onVideoFullscreenPlayerDidDismiss(@{@"target": self.reactTag});

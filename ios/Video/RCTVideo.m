@@ -10,6 +10,7 @@ static NSString *const statusKeyPath = @"status";
 static NSString *const playbackLikelyToKeepUpKeyPath = @"playbackLikelyToKeepUp";
 static NSString *const playbackBufferEmptyKeyPath = @"playbackBufferEmpty";
 static NSString *const readyForDisplayKeyPath = @"readyForDisplay";
+static NSString *const vcOverlayFrameKeyPath = @"frame";
 static NSString *const playbackRate = @"rate";
 static NSString *const timedMetadata = @"timedMetadata";
 static NSString *const externalPlaybackActive = @"externalPlaybackActive";
@@ -1498,11 +1499,6 @@ static int const RCTVideoUnset = -1;
 {
   if (_playerViewController == playerViewController && _fullscreenPlayerPresented && self.onVideoFullscreenPlayerWillDismiss)
   {
-    @try{
-      [_playerViewController.contentOverlayView removeObserver:self forKeyPath:@"frame"];
-      [_playerViewController removeObserver:self forKeyPath:readyForDisplayKeyPath];
-    }@catch(id anException){
-    }
     self.onVideoFullscreenPlayerWillDismiss(@{@"target": self.reactTag});
   }
 }
@@ -1518,6 +1514,11 @@ static int const RCTVideoUnset = -1;
       [viewController addChildViewController:_playerViewController];
       [self addSubview:_playerViewController.view];
     } else {
+        @try{
+          [_playerViewController.contentOverlayView removeObserver:self forKeyPath:@"frame"];
+          [_playerViewController removeObserver:self forKeyPath:readyForDisplayKeyPath];
+        }@catch(id anException){
+        }
       _playerViewController = nil;
     }
     [self applyModifiers];
